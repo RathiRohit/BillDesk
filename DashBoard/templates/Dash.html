@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load staticfiles %}
+  <title>BillDesk | DashBoard</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.js"></script>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css" media="all" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript">
+</script> <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript"></script>
+  <style type="text/css">
+    input[type=text] , input[type=number]{
+        
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        background-color: white;
+        background-position: 10px 10px; 
+        background-repeat: no-repeat;
+        padding: 12px 20px 12px 40px;
+        -webkit-transition: width 0.4s ease-in-out;
+        transition: width 0.4s ease-in-out;
+    }
+
+    input[type=text]:not(.datepickers):focus ,input[type=number]:not(.datepickers):focus{
+        width: 30%;
+    }
+  
+  .glyphiconRemoveIcon{
+    color:#e60000;
+    text-align:left;
+  }
+  .glyphiconRemoveIcon:hover{
+    color:#ff0000;
+    cursor:pointer;
+  }
+  .css-serial {
+    counter-reset: serial-number;  /* Set the serial number counter to 0 */
+  }
+
+  .css-serial td:first-child:before {
+    counter-increment: serial-number;  /* Increment the serial number counter */
+    content: counter(serial-number);  /* Display the counter */
+  }
+  </style>
+  <script type="text/javascript" src="{% static 'moment.js' %}"></script>
+  <script type="text/javascript" src="{% static 'Chart.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'listutil.js' %}"></script>
+  <script type="text/javascript" src="{% static 'Dashboard.js' %}"></script>
+  
+  <script type="text/javascript" src="{% static 'semantic.min.js' %}"></script>
+  
+  <link rel="stylesheet" href="{% static 'semantic.min.css' %}"></link>
+  <script type="text/javascript" src="{% static 'tablesort.js' %}"></script>
+  
+  <script type="text/javascript">
+	var byClientChart = null;
+	var byProductChart = null;
+	var lineChart = null;
+	var lineValues = [];
+	var lineLabels = [];
+	var lineChartType = 'Daily';
+	var pChart = null;
+	var datasetName = null;
+	
+   $(function() {
+    $('.table').tablesort(); 
+    
+    {% if permissions.Billing == 'checked' %}
+      $('#add').click(function(){
+          $.post('add/',{
+            'inven':$('#inven_auto').val(),
+            'count':$('#count').val(),
+            'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            function(data){
+              if(data=='fail')
+                alert('Invalid');
+              else
+              {
+                $('#selected_inventories').append("<tr><td></td><td>"+ $('#inven_auto').val()+"</td><td>"+ data+"</td><td contenteditable=\"true\" onkeyup=\"valueChanged(this,false)\" onblur=\"valueChanged(this,true)\">"+$('#count').val()+"</td><td>"+data +" X "+ $('#count').val()+ " = " + data*$('#count').val()+"</td><td onclick=\"removeRow(this)\"><span class=\"glyphicon glyphicon-remove glyphiconRemoveIcon\"></span></td></tr>");
+                  items.insert(new Item($('#inven_auto').val(),data,$('#count').val()));   
+                n++;
+                tot_cost += data*$('#count').val();
+                $('#tot_cost').html("Total : Rs "+ tot_cost);
+                $('#inven_auto').val('');
+                $('#count').val('');
+              }
+              document.getElementById("inven_auto").focus();
+            });
+          });
+      {% endif %}
+
+      {% if permissions.Customer == 'checked' %}
+      $('#register').click(function(){
+        $.post('register/', { 
+          'customername': $('#customername').val(),
+          'customervillage':  $('#customervillage').val(), 
+          'customerage':  $('#customerage').val(), 
+          'customerphone':  $('#customerphone').val(), 
+         
+          'csrfmiddlewaretoken': '{{ csrf_token }}'}, 
+            function(data){
+              if(data == 'fail')
+                alert('Invalid') 
+              else{
+
+                  $('.nav-tabs a[href="#Billing"]').tab('show');
+                  $('#customer_auto').val($('#customername').val());
+                  document.getElementById("inven_auto").focus();
+              }
+              $('#customername').val('');
+              $('#customervillage').val('');
+              $('#customerage').val('');
+              $('#customerphone').val('');
+            });
+      });
+      {% endif %}
+
+      {% if permissions.Inventory == 'checked' %}
+      $('#addinven').click(function(){
+        $.post('addinven/', { 
+          'inven': $('#newinven').val(),
+          'price':  $('#newprice').val(), 
+          'csrfmiddlewaretoken': '{{ csrf_token }}'}, 
+            function(data){
+              if(data == 'fail')
+                alert('Invalid') 
+              else
+                  $('#inven_body').append("<tr><td>"+data+"</td><td>"+$('#newinven').val()+"</td><td>"+$('#newprice').val()+"</td></tr>"); 
+              $('#newinven').val('');
+              $('#newprice').val('');
+            });
+      });
+      {% endif %}
+      $(".inven_auto").autocomplete({
+        source: 'autocompleteinven/',
+        minLength: 1,
+      });
+
+      $("#customer_auto").autocomplete({
+        source: 'autocompletecusto/',
+        minLength: 1,
+      });
+
+      $("#dialog").dialog({
+          autoOpen: false,
+          modal: true
+        });
+      {% if permissions.Billing == 'checked' %}
+      $(".confirmLink").click(function(e) {
+        e.preventDefault();
+        var targetUrl = $(this).attr("href");
+
+        $("#dialog").dialog({
+          buttons : {
+            "Confirm" : function() {
+        //Lets create List here
+                $.post('placeorder/', { 
+                'List':JSON.stringify(items),
+                'customername':  $('#customer_auto').val(), 
+                'tot_cost':tot_cost,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                 function(data){
+                  $("#dialog").dialog("close");
+                 });
+            },
+            "Cancel" : function() {
+              $(this).dialog("close");
+            }
+          }
+        });
+
+        $("#dialog").dialog("open");
+      });
+      {% endif %}
+	  
+	  /*Datepicker*/
+	  $( function() {
+			$( "#sdatepicker" ).datepicker({
+				changeMonth: true,
+				changeYear: true,
+				dateFormat: 'dd/mm/yy',
+				onSelect: function(selected, evnt){
+					changeLineChart(getStartDate(selected));
+				}
+			});
+		} );
+		
+		$('#sdatepicker').bind('input', function() { 
+			changeLineChart(getStartDate());
+		});
+	  /*Chart*/
+		changeTime('Client','This Week');
+		changeTime('Product','This Week');
+		changeTime('Line','Monthly');
+		
+      {% if permissions.Inven_change %}
+
+       $('body').on('focus', '[data-id]', function() {
+            var $this = $(this);
+            $this.data('before', $this.html().replace(/\&nbsp;/g, ' '));
+            return $this;
+        }).on('blur', '[data-id]', function() {
+            var $this = $(this);
+            if ($this.data('before') !== $this.html().replace(/\&nbsp;/g, ' ')) {
+                $.post('modify/', {
+                'id':$(this).attr('data-id'),
+                'field': $this.html().replace(/\&nbsp;/g, ' '),
+                'f_id':$(this).attr('data-type'),
+                'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                 function(data){
+
+                });
+            }
+            return $this;
+        });
+      {% endif %}
+    });
+	
+	/*Charts*/
+	function changeTime(chartType, str){
+		dbutton = document.getElementById("dropdownBy"+chartType);
+		dbutton.innerHTML = str+' <span class="caret"></span>';
+		
+		$.post('changeData/', { 
+		  'chartType': chartType,	//Client, Product or Line
+		  'timeSpan':  str,			//"This Week", "This Month",..., "Monthly", "Yearly"
+		  'csrfmiddlewaretoken': '{{ csrf_token }}'}, 
+		  
+		function(data){
+			if(chartType == 'Client' || chartType == 'Product'){
+				var len = data['values[]'].length;
+				var backColor = [];
+				
+				for(i=0;i<len;i++)
+				backColor.push(getRandomColor());
+					
+				if(chartType == 'Client'){
+					if(byClientChart != null)
+						byClientChart.destroy();
+				}
+				else if(chartType == 'Product'){
+					if(byProductChart != null)
+						byProductChart.destroy();
+				}
+				var ctx = document.getElementById("dChart"+chartType).getContext("2d");
+				var myChart = new Chart(ctx, {
+					type: 'doughnut',
+					data: {
+						datasets: [{
+							label: 'By '+chartType,
+							data: data['values[]'],
+							backgroundColor: backColor,
+							borderColor: ['rgba(255,255,255,1)']
+						}],
+						labels: data['labels[]']
+					},
+					options: {maintainAspectRatio: false,responsive:true}
+				});
+				if(chartType == 'Client'){
+					byClientChart = myChart;
+				}
+				else if(chartType == 'Product'){
+					byProductChart = myChart;
+				}
+				document.getElementById("dChart"+chartType+"Label").innerHTML = "(From "+data['startdate']+" To "+data['enddate']+")";
+			}
+			else if(chartType == 'Line'){
+				lineValues = data['values[]'];
+				lineLabels = data['labels[]'];
+				lineChartType = str;
+				
+				changeLineChart(getStartDate());
+			}
+		});
+	}
+	
+	function getStartDate(sdate = ''){
+		str='';
+		if(sdate == '')
+		{
+			str = moment().format('DD/MM/YYYY');
+			document.getElementById('sdatepicker').value = str;
+		}
+		else
+			str = sdate;
+		startdate = moment(str, 'DD/MM/YYYY');
+		if(startdate.isValid()==false)
+			startdate = moment('01/01/2017', 'DD/MM/YYYY');
+		return startdate;
+	}
+	
+	function changeLineChart(startdate){
+		myvalues = [];
+		mylabels = [];
+		
+		if(lineChartType == 'Daily'){
+			enddate = startdate.clone();
+			enddate.add(31, 'days');
+			len = lineValues.length;
+			for(i=0;i<31;i++)
+			{
+				myvalues.push(0);
+				mylabels.push(startdate.clone().add(i, 'days').format('DD/MM/YY'));
+			}
+			for(i=0;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrAfter(startdate))
+					break;
+			}
+			for(;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrBefore(enddate)){
+					myvalues[mylabels.indexOf(date.format('DD/MM/YY'))] = lineValues[i];
+				}
+				else{
+					break;
+				}
+			}
+			startdate = startdate.format('DD/MMM/YY');
+			enddate = enddate.format('DD/MMM/YY');
+		}
+		else if(lineChartType == 'Monthly'){
+			startdate.date(1);
+			enddate = startdate.clone();
+			enddate.add(12, 'months');
+			len = lineValues.length;
+			for(i=0;i<12;i++)
+			{
+				myvalues.push(0);
+				mylabels.push(startdate.clone().add(i, 'months').format('MMM-YY'));
+			}
+			for(i=0;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrAfter(startdate, 'month'))
+					break;
+			}
+			for(;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrBefore(enddate, 'month')){
+					myvalues[mylabels.indexOf(date.format('MMM-YY'))] = lineValues[i];
+				}
+				else{
+					break;
+				}
+			}
+			startdate = startdate.format('MMM-YY');
+			enddate = enddate.format('MMM-YY');
+		}
+		else if(lineChartType == 'Yearly'){
+			startdate.date(1);
+			startdate.month(1);
+			enddate = startdate.clone();
+			enddate.add(10, 'years');
+			len = lineValues.length;
+			for(i=0;i<10;i++)
+			{
+				myvalues.push(0);
+				mylabels.push(startdate.clone().add(i, 'years').format('YYYY'));
+			}
+			for(i=0;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrAfter(startdate, 'year'))
+					break;
+			}
+			for(;i<len;i++){
+				date = moment(lineLabels[i], 'DD/MM/YYYY');
+				if(date.isSameOrBefore(enddate, 'year')){
+					myvalues[mylabels.indexOf(date.format('YYYY'))] = lineValues[i];
+				}
+				else{
+					break;
+				}
+			}
+			startdate = startdate.format('YYYY');
+			enddate = enddate.format('YYYY');
+		}
+		len = myvalues.length;
+		backColor = [];
+		for(i=0;i<len;i++)
+			backColor.push(getRandomColor());
+		if(lineChart != null)
+			lineChart.destroy();
+		var ctx = document.getElementById("lChart").getContext("2d");
+		var myChart = new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: mylabels,
+				datasets: [{
+					label: lineChartType+' Sales ('+startdate+' to '+enddate+')',
+					data: myvalues,
+					backgroundColor: backColor,
+					borderColor: ['rgba(255,255,255,1)'],
+					borderWidth: 1
+				}]
+			},
+			options: {
+				maintainAspectRatio: false,
+				responsive:true,
+				scales: {
+					xAxes: [{
+						ticks: {
+							autoSkip:false
+						}
+					}]
+				}
+			}
+		});
+		document.getElementById('lChartLabel').innerHTML = lineChartType+' Sales ('+startdate+' to '+enddate+')';
+		lineChart = myChart;
+	}
+	
+	function getRandomColor() {
+		var letters = '0123456789ABCDEF'.split('');
+		var color = '#';
+		for (var i = 0; i < 6; i++ ) {
+			color += letters[Math.floor(Math.random() * 16)];
+		}
+		return color;
+	}
+	
+	$(function(){
+		Chart.plugins.register({
+			afterDraw: function(chart) {
+			if (chart.data.labels.length === 0) {
+				// No data is present
+			  var ctx = chart.chart.ctx;
+			  var width = chart.chart.width;
+			  var height = chart.chart.height
+			  chart.clear();
+			  
+			  ctx.save();
+			  ctx.textAlign = 'center';
+			  ctx.textBaseline = 'middle';
+			  ctx.font = "16px normal 'Helvetica Nueue'";
+			  ctx.fillText('No data to display', width / 2, height / 2);
+			  ctx.restore();
+			}
+			}
+		});
+	});
+	
+	function predict(){
+		if(datasetName == null)
+			return;
+		$.post('showPrediction/', { 
+		  'datasetName': datasetName,
+		  'queryType': 'predict',
+		  'csrfmiddlewaretoken': '{{ csrf_token }}'},
+		  function(data){
+			document.getElementById('pMSE').innerHTML = 'MSE: '+data['MSE'];
+			document.getElementById('pPError').innerHTML = 'Percentage Error: '+data['pError']+'%';
+			if(pChart != null)
+				pChart.destroy();
+			var ctx = document.getElementById("pChart").getContext("2d");
+			var myChart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: data['testDataLabels'],
+					datasets: [{
+						label: 'Original Data',
+						data: data['trainDataValues'],
+						borderColor: 'Blue',
+						borderWidth: 1
+					},
+					{
+						label: 'Predicted Data',
+						data: data['testDataValues'],
+						borderColor: 'Red',
+						borderWidth: 1
+					}]
+				},
+				options: {
+					maintainAspectRatio: false,
+					responsive:true,
+					elements: { point: { radius: 0 } }
+				}
+			});
+			pChart = myChart;
+		  }
+		);
+	}
+	
+	function getDataset(str){
+		btn = document.getElementById('datasetsDropdown');
+		btn.innerHTML = str+' <span class="caret"></span>';
+		datasetName = str;
+		$.post('showPrediction/', { 
+		  'datasetName': str,
+		  'queryType': 'getDataset',
+		  'csrfmiddlewaretoken': '{{ csrf_token }}'},
+		  function(data){
+			if(pChart != null)
+				pChart.destroy();
+			var ctx = document.getElementById("pChart").getContext("2d");
+			var myChart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: data['testDataLabels'],
+					datasets: [{
+						label: 'Original Data',
+						data: data['trainDataValues'],
+						borderColor: 'Blue',
+						borderWidth: 1
+					}]
+				},
+				options: {
+					maintainAspectRatio: false,
+					responsive:true,
+					elements: { point: { radius: 0 } }
+				}
+			});
+			pChart = myChart;
+		  }
+		);
+	}
+  </script>
+</head>
+<body>
+
+<div class="container">
+  
+  <h2 class="col-md-12">
+  BillDesk
+  {% if user.is_authenticated %}
+    <span class="pull-right" align="right">Hi <a href="{% url 'Accounts:profile' user.username %}">{{ user.username }}</a>!  <a href="{% url 'Accounts:logout' %}">[logout]</a></span>
+  {% else %}
+    <span class="pull-right" align="right">Hi Guest!  <a href="{% url 'Accounts:login' %}">[login]</a></span>
+  {% endif %}
+  </h2>
+  
+  <ul class="nav nav-tabs" id="Tabs">
+    {% if permissions.Admin == 'checked' %}
+    <li><a data-toggle="tab" href="#Admin">Admin</a></li>
+    {% endif %}
+    {% if permissions.Inventory == 'checked' %}
+    <li><a data-toggle="tab" href="#Inventory">Inventory +</a></li>
+    {% endif %}
+    {% if permissions.Billing == 'checked' %}
+    <li><a data-toggle="tab" href="#Billing">Billing</a></li>
+    {% endif %}
+    {% if permissions.Customer == 'checked' %}
+    <li><a data-toggle="tab" href="#Customer">Customer +</a></li>
+    {% endif %}
+	<li><a data-toggle="tab" href="#Analytics">Analytics</a></li>
+	<li><a data-toggle="tab" href="#Predictions">Predictions</a></li>
+  </ul>
+  <div class="tab-content">
+  {% if permissions.Admin == 'checked' %}
+    <br><br>
+    <div id="Admin" class="tab-pane fade in active">
+      <table class="ui sortable table segment css-serial">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Admin </th>
+          <th>Inventory + </th>
+          <th>Billing </th>
+          <th>Customer </th>
+          <th>status </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for account in all_accounts %}
+        <tr>
+          <td></td>
+          <td><a href="{% url 'Accounts:profile' account.user.username %}">{{account.user.username }} </a></td>
+          {% if account.store_id == account.user.username %} 
+          <td><input id="admin_{{ account.id }}" type="checkbox" {{ account.Authority_Admin }} disabled="true" /></td>
+          <td><input id="inven_{{ account.id }}" type="checkbox" {{ account.Authority_AddInventory }} disabled="true" /></td>
+          <td><input id="bill_{{ account.id }}" type="checkbox" {{ account.Authority_Billing }} disabled="true" /></td>
+          <td><input id="custo_{{ account.id }}" type="checkbox" {{ account.Authority_Customer }} disabled="true" /></td>
+          <td>Store Owner</td>
+          {% else %}
+          <td><input id="admin_{{ account.id }}" type="checkbox" {{ account.Authority_Admin }}  /></td>
+          <td><input id="inven_{{ account.id }}" type="checkbox" {{ account.Authority_AddInventory }}  /></td>
+          <td><input id="bill_{{ account.id }}" type="checkbox" {{ account.Authority_Billing }}  /></td>
+          <td><input id="custo_{{ account.id }}" type="checkbox" {{ account.Authority_Customer }} /></td>
+          <td><input id="confirm_{{ account.id }}" type="button" value="confirm" /></td>
+          {% endif %}
+          <script type="text/javascript">
+          $(function() {
+              $('#confirm_{{ account.id }}').click(function(){
+                $.post('confirm/{{ account.id }}/', { 
+                  'inven': $('#inven_{{ account.id }}:checked').val(),
+                  'bill':  $('#bill_{{ account.id }}:checked').val(), 
+                  'admin': $('#admin_{{ account.id }}:checked').val(),
+                  'custo':  $('#custo_{{ account.id }}:checked').val(), 
+                  
+                  'csrfmiddlewaretoken': '{{ csrf_token }}'}, 
+                    function(data){
+                        if(data=="fail")
+                            alert("Changes failed !");
+                        else{
+                          alert('Saved');
+                          location.reload();
+                        }  
+                    });
+              });
+            });
+          </script>
+        </tr>
+        {% endfor %}
+      </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if permissions.Inventory == 'checked' %}
+    <div id="Inventory" class="tab-pane fade">
+      <center>
+      <br>
+      <label>Add New Inventory : </label><br>
+      <input type="text" id="newinven" class="inven_auto" placeholder="Inventory Name ..">
+      <input type="number" id="newprice" placeholder="Rs .."><br><br>
+      <button id="addinven">Add</button>
+      </center>
+      <table class="ui sortable table segment css-serial">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Inventory Name</th>
+          <th>Price</th>
+          <th>GST</th>
+        </tr>
+      </thead>
+      <tbody id="inven_body">
+        {% for inv in inventories %}
+        <tr>
+          <td></td>
+          {% if permissions.Inven_change %}
+          <td data-id="{{inv.id}}" data-type="1" contenteditable="true" >{{inv.i_name }} </td>
+          <td data-id="{{inv.id}}" data-type="2" contenteditable="true" >{{inv.i_price}}</td>
+          <td data-id="{{inv.id}}" data-type="3" contenteditable="true" >{{inv.gst_perc}}</td>
+          {% else %}
+          <td>{{inv.i_name }} </td>
+          <td>{{inv.i_price}}</td>
+          <td>{{inv.gst_perc}}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if permissions.Billing == 'checked' %}
+    <div id="Billing" class="tab-pane fade">
+      <br>
+      <div class="col-md-10">
+      <input type="text" id="customer_auto" name="customername" placeholder="Customer's Name..">
+      </div>
+      <div class="col-md-2">
+      <label align="right" id="tot_cost"></label>
+      </div>
+      <div class="col-md-12">
+      <center>
+        <div class="ui-widget">
+          <label for="Inventories">Inventories : </label>
+          <input id="inven_auto" class="inven_auto" type="text" name="inven" placeholder="Search..">
+          <input id="count" type="number" name="count" min="0" placeholder="Count">
+          <button id="add">Add in List</button>
+        </div>
+      </center>
+      </div>
+      <table class="ui sortable table segment billingTable css-serial" >
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Inventory Name</th>
+          <th>Price</th>
+          <th>Count</th>
+          <th>Remark</th>
+      <th></th>
+        </tr>
+      </thead>
+      <tbody id="selected_inventories">
+      </tbody>
+      </table>
+      <button class="confirmLink">Place order</button>
+      <div id="dialog" title="Confirm Bill">
+        Are you sure about this?
+      </div>
+
+    </div>
+    {% endif %}
+    {% if permissions.Customer == 'checked' %}
+    <div id="Customer" class="tab-pane fade">
+        <br>
+        <center><input type="text" id="customername" placeholder="Customer Name "></center><br>
+        <center><input type="text" id="customervillage" placeholder="Customer Village"></center><br>
+        <center><input type="number" id="customerage" placeholder="Customer age group "></center><br>
+        <center><input type="number" id="customerphone" placeholder="Customer phone "></center><br>
+        <center><button id="register">Register</button></center>
+    </div>
+    {% endif %}
+	<div id="Analytics" class="tab-pane fade">
+        <br>
+		<div class="container col-md-12 row">
+			<div class="container col-md-6">
+				<div class="col-md-12 well">
+					<h4 class="text-center col-md-12">Sales by Clients</h4>
+					<div class="text-center col-md-12 align-middle" id="dChartClientLabel">From to</div>
+					<div class="chart-container container col-md-12" style="position: relative; height:255px; width:100%">
+						<canvas id="dChartClient" class="col-md-12"></canvas>
+					</div>
+					<div class="col-md-12">
+						<div class="dropdown">
+						  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownByClient" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							This Week
+							<span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" aria-labelledby="dropdownByClient">
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','This Week')">This Week</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','This Month')">This Month</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','This Year')">This Year</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','Last Week')">Last Week</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','Last Month')">Last Month</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Client','Last Year')">Last Year</a></li>
+						  </ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="container col-md-6">
+				<div class="col-md-12 well">
+					<h4 class="text-center col-md-12">Sales by Products</h4>
+					<div class="text-center col-md-12 align-middle" id="dChartProductLabel">From to</div>
+					<div class="chart-container container col-md-12" style="position: relative; height:255px; width:100%">
+						<canvas id="dChartProduct" class="col-md-12"></canvas>
+					</div>
+					<div class="col-md-12">
+						<div class="dropdown">
+						  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownByProduct" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							This Week
+							<span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" aria-labelledby="dropdownByProduct">
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','This Week')">This Week</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','This Month')">This Month</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','This Year')">This Year</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','Last Week')">Last Week</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','Last Month')">Last Month</a></li>
+							<li><a class="dropdown-item" href="javascript:changeTime('Product','Last Year')">Last Year</a></li>
+						  </ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="container col-md-12 well" style="margin-top:1rem">
+			<h4 class="col-md-12 text-center">Sales by Time</h4> 
+			<div class="text-center col-md-12 align-middle" id="lChartLabel">From to</div>
+			<div class="row col-md-12"> 
+				<div class="container col-md-9">
+					<div class="chart-container container col-md-12" style="position: relative; height:255px; width:100%">
+						<canvas id="lChart" class="col-md-12"></canvas>
+					</div>
+				</div>
+				<br>
+				<div class="container col-md-3">
+					<div class="dropdown col-md-12">
+					  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownByLine" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Monthly
+						<span class="caret"></span>
+					  </button>
+					  <ul class="dropdown-menu" aria-labelledby="dropdownByLine">
+						<li><a class="dropdown-item" href="javascript:changeTime('Line','Daily')">Daily</a></li>
+						<li><a class="dropdown-item" href="javascript:changeTime('Line','Monthly')">Monthly</a></li>
+						<li><a class="dropdown-item" href="javascript:changeTime('Line','Yearly')">Yearly</a></li>
+					  </ul>
+					</div>
+					<br>
+					<div class="form-group col-md-12">
+						<label>Start Date:</label>
+						<input type="text" class="form-control datepickers" id="sdatepicker" value="01/01/2017" readonly>
+					</div>
+				</div>
+			</div>
+			<br><br>
+		</div>
+    </div>
+	<div id="Predictions" class="tab-pane fade">
+		<div class="col-md-12 well">
+			<div class="container col-md-12 well">
+				<div class="container col-md-12">
+					<div class="chart-container container col-md-12" style="position: relative; height:255px; width:100%">
+						<canvas id="pChart" class="col-md-12"></canvas>
+					</div>
+				</div>
+			</div>
+			<div class="container col-md-12 row">
+				<div class="col-md-6">
+					<div class="dropdown col-md-12">
+					  <button class="btn btn-secondary dropdown-toggle col-md-12" type="button" id="datasetsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Choose Datasets...
+						<span class="caret"></span>
+					  </button>
+					  <ul class="dropdown-menu" aria-labelledby="datasetsDropdown">
+						<li><a class="dropdown-item" href="javascript:getDataset('wholesretail')">wholesretail</a></li>
+						<li><a class="dropdown-item" href="javascript:getDataset('champagne')">champagne</a></li>
+						<li><a class="dropdown-item" href="javascript:getDataset('AirPassengers')">AirPassengers</a></li>
+						<li><a class="dropdown-item" href="javascript:getDataset('Dataset 4')">Dataset 4</a></li>
+						<li><a class="dropdown-item" href="javascript:getDataset('Dataset 5')">Dataset 5</a></li>
+					  </ul>
+					</div>
+					<br><br><br>
+					<div class="col-md-12">
+						<button class="btn btn-secondary col-md-6" onclick="javascript:predict()">Predict</button>
+					</div>
+				</div>
+				<h4 id="pMSE" class="col-md-3">MSE: ?</h4>
+				<h4 id="pPError" class="col-md-3">Percentage Error: ?</h4>
+			</div>
+		</div>
+	</div>
+  </div>
+</div>
+
+</body>
+</html>

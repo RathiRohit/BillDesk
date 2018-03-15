@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>BillDesk | Admin signup</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css" media="all" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		
+		<style type="text/css">
+			input[type=text] , input[type=password]{
+				
+				box-sizing: border-box;
+				border: 2px solid #ccc;
+				border-radius: 4px;
+				font-size: 16px;
+				background-color: white;
+				background-position: 10px 10px; 
+				background-repeat: no-repeat;
+				padding: 12px 20px 12px 40px;
+				-webkit-transition: width 0.4s ease-in-out;
+				transition: width 0.4s ease-in-out;
+			}
+		 </style>
+	</head>
+	<body>
+		<div class="container">
+			<br><br>
+			<div class="col-md-8 col-md-offset-2 well">
+					<form method="post">{% csrf_token %}
+						<center>
+							<h2>Signup for BillDesk</h2>
+							<br><br>
+							
+						</center>
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col-md-6">
+									<center>
+										<input id="id_full_name" placeholder="Full name" maxlength="500" name="full_name" type="text">
+										{% if 'full_name' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.full_name.errors.0 }}</span><!--Example for when to show error fields-->
+										{% endif %}
+										<br><br>
+										
+										<input id="id_mob_number" placeholder="Mobile Number"  maxlength="15" name="mob_number" type="text">
+										{% if 'mob_number' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.mob_number.errors.0 }}</span>
+										{% endif %}
+										<br><br>
+										<input id="id_email_id" placeholder="Email ID"  maxlength="254" name="email_id" type="text">
+										{% if 'email_id' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.email_id.errors.0 }}</span>
+										{% endif %}
+										<br><br>
+									</center>
+								</div>
+								<div class="col-md-6">
+									<center>
+										<input id="id_username" placeholder="Username"  maxlength="30" name="username" type="text">
+										{% if 'username' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.username.errors.0 }}</span>
+										{% endif %}
+										<br><br>
+										<input id="id_password1" placeholder="Password"  name="password1" type="password">
+										{% if 'password1' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.password1.errors.0 }}</span>
+										{% endif %}
+										<br><br>
+										<input id="id_password2" placeholder="Verify Password"  name="password2" type="password">
+										{% if 'password2' in form.errors %}
+											<br>
+											<span style="color:RED">{{ form.password2.errors.0 }}</span>
+										{% endif %}
+										<br><br>
+										<input id="id_productKey" placeholder="Product key"  maxlength="100" name="productkey" type="text">
+										{% if productkeyErrors != '' %}
+											<br>
+											<span style="color:RED">{{ productkeyErrors }}</span>
+										{% endif %}
+										<br><br>
+									</center>
+								</div>
+							</div>
+						</div>
+						<br>
+						<center>
+							<div class="container-fluid">
+								<div class="row">
+									<button type="submit">Sign Up as Admin</button>
+								</div>
+							</div>
+						</center>
+				</form>
+				<center>
+					<br>
+					<a href="/Accounts/login/">Already have an account ? Login here</a>
+					<br><br>
+					<a href="/Accounts/signup/">Normal signup ></a>
+				</center>
+			</div>
+		</div>
+	</body>
+</html>

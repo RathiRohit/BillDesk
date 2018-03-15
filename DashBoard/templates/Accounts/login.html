@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>BillDesk | Login</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css" media="all" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		
+		<style type="text/css">
+			input[type=text] , input[type=password]{
+				
+				box-sizing: border-box;
+				border: 2px solid #ccc;
+				border-radius: 4px;
+				font-size: 16px;
+				background-color: white;
+				background-position: 10px 10px; 
+				background-repeat: no-repeat;
+				padding: 12px 20px 12px 40px;
+				-webkit-transition: width 0.4s ease-in-out;
+				transition: width 0.4s ease-in-out;
+			}
+		 </style>
+	</head>
+	<body>
+		<div class="container">
+			<br><br>
+			<div class="col-md-4 col-md-offset-4 well">
+				<center>
+					<form method="post" action="/Accounts/login/">
+						<h2>Login to BillDesk</h2>
+						<br>
+						{% if form.errors %}
+							<span style="color:RED">Incorrect username/password</span>
+							<br><br>
+						{% endif %}
+						{% csrf_token %}
+						
+						<input id="id_username" placeholder="Username" autofocus required maxlength="254" name="username" type="text">
+						{% if 'username' in form.errors %}
+							<span>{{ form.username.errors }}</span>
+						{% endif %}
+						<br><br>
+						<input id="id_password" placeholder="Password" required name="password" type="password">
+						{% if 'password' in form.errors %}
+							<span>{{ form.password.errors }}</span>
+						{% endif %}
+						<br><br>
+						<button type="submit" value="login">Login</button>
+						<input type="hidden" name="next" value="/DashBoard/">
+					</form>
+					<br>
+					<a href="/Accounts/signup/">Don't have an account ? Signup here</a><br/>
+					<a href="/Accounts/password_reset/">Forgot Password ></a>
+				</center>
+			</div>
+		</div>
+	</body>
+</html>

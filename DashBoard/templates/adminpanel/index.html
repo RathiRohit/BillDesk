@@ -1,0 +1,50 @@
+<html>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+
+<style type="text/css">
+	.css-serial {
+    counter-reset: serial-number;  /* Set the serial number counter to 0 */
+  }
+
+  .css-serial td:first-child:before {
+    counter-increment: serial-number;  /* Increment the serial number counter */
+    content: counter(serial-number);  /* Display the counter */
+  }
+  </style>
+<body>
+  <h2 class="col-md-12">
+  BillDesk
+  {% if user.is_authenticated %}
+    <span class="pull-right" align="right">Hi <a href="{% url 'Accounts:profile' user.username %}">{{ user.username }}</a>!  <a href="{% url 'Accounts:logout' %}">[logout]</a></span>
+  {% else %}
+    <span class="pull-right" align="right">Hi Guest!  <a href="{% url 'Accounts:login' %}">[login]</a></span>
+  {% endif %}
+  </h2>
+<br><br><br><br>
+<table class="table css-serial">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Store</th>
+      <th>product key</th>
+      <th>Valid upto</th>
+      <th>GSTIN</th>
+    </tr>
+  </thead>
+  <tbody id="inven_body">
+	{% for store in store_owners%}
+    <tr>
+      <td></td>
+      <td><a href="{% url 'Accounts:profile' store.Profile.user.username %}">{{store.Profile.user.username }}</a> </td>
+      <td>{{store.product_key}}</td>
+      <td>{{store.time_rem}}</td>
+      <td>{{store.gst_in}}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</body>
+</html>
